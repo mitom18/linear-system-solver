@@ -2,10 +2,10 @@
 // Created by tomanm10 on 04.12.2019.
 //
 
-#include <string>
 #include <iostream>
 
 #include "command.hpp"
+#include "system_solver.hpp"
 
 Command CommandInterpreter::get_command(std::ostream &ostream, std::istream &istream) {
     std::string input;
@@ -40,17 +40,19 @@ std::string CommandInterpreter::get_command_help(const Command &cmd) {
     }
 }
 
-void CommandInterpreter::process_command(std::ostream &ostream, const Command &cmd) {
+void CommandInterpreter::process_command(std::ostream &ostream, std::istream &istream, const Command &cmd) {
     if (cmd == Command::QUIT) {
         ostream << "Shutting down..." << std::endl;
     } else if (cmd == Command::HELP) {
         print_help(ostream);
     } else if (cmd == Command::CMD_INPUT) {
         // TODO: cmd prompt input
-        ostream << "todo cmd input" << std::endl;
+        MatrixCreator::parse_from_cmd_line(ostream, istream);
     } else if (cmd == Command::TXT_INPUT) {
         // TODO: txt file input
         ostream << "todo txt input" << std::endl;
+    } else if (cmd == Command::UNKNOWN) {
+        ostream << "Unknown command entered" << std::endl;
     }
 }
 

@@ -9,7 +9,7 @@
 #include <map>
 
 /**
- * Enumeration for all commands in the application.
+ * Enumeration for all commands in the application
  */
 enum class Command {
     QUIT,
@@ -20,7 +20,7 @@ enum class Command {
 };
 
 /**
- * Class for working with commands.
+ * Class responsible for working with the commands
  */
 class CommandInterpreter {
 private:
@@ -65,7 +65,7 @@ public:
      * @param ostream
      * @param cmd
      */
-    void process_command(std::ostream &ostream, const Command &cmd);
+    void process_command(std::ostream &ostream, std::istream &istream, const Command &cmd);
 
     /**
      * Prints program help.
