@@ -5,11 +5,12 @@
 #include <iostream>
 
 #include "command.hpp"
-#include "system_solver.hpp"
+#include "matrix.hpp"
 
 Command CommandInterpreter::get_command(std::ostream &ostream, std::istream &istream) {
-    std::string input;
     ostream << "Enter command to execute..." << std::endl;
+    istream >> std::ws; // clear the whitespaces that left in the stream
+    std::string input;
     std::getline(istream, input);
     return str_to_command(input);
 }
@@ -46,11 +47,10 @@ void CommandInterpreter::process_command(std::ostream &ostream, std::istream &is
     } else if (cmd == Command::HELP) {
         print_help(ostream);
     } else if (cmd == Command::CMD_INPUT) {
-        // TODO: cmd prompt input
-        MatrixCreator::parse_from_cmd_line(ostream, istream);
+        ostream << MatrixCreator::parse_from_cmd_line(ostream, istream);
+        // TODO: linear system solving
     } else if (cmd == Command::TXT_INPUT) {
-        // TODO: txt file input
-        ostream << "todo txt input" << std::endl;
+        ostream << MatrixCreator::parse_from_txt_file(ostream, istream);
     } else if (cmd == Command::UNKNOWN) {
         ostream << "Unknown command entered" << std::endl;
     }
