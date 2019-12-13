@@ -10,6 +10,11 @@
 #include <fstream>
 #include <vector>
 
+/**
+ * Constant representing directory in which all program txt file inputs are located.
+ */
+#define INPUTS_DIR "../inputs/"
+
 class FileReader {
 private:
     /**
@@ -29,11 +34,6 @@ private:
      */
     static std::ifstream read_file(std::string &file_name);
 public:
-    /**
-     * Constant representing directory in which all program txt file inputs are located.
-     */
-    static const std::string INPUTS_DIR;
-
     /**
      * Lets user choose from which file program should parse the linear system matrix.
      * @param ostream

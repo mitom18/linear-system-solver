@@ -7,8 +7,6 @@
 
 #include "utils.hpp"
 
-const std::string FileReader::INPUTS_DIR = "../inputs/";
-
 std::ifstream FileReader::choose_file(std::ostream &ostream, std::istream &istream) {
     std::string chosen_file;
     bool is_read = false;
@@ -25,7 +23,7 @@ std::ifstream FileReader::choose_file(std::ostream &ostream, std::istream &istre
 
 std::vector<std::string> FileReader::get_files() {
     std::vector<std::string> files;
-    DIR* dirp = opendir(INPUTS_DIR.c_str());
+    DIR* dirp = opendir(INPUTS_DIR);
     struct dirent * dp;
     while ((dp = readdir(dirp)) != nullptr) {
         std::string file(dp->d_name);
