@@ -5,11 +5,47 @@
 #include <iostream>
 #include <iomanip>
 #include <exception>
+#include <algorithm>
 
 #include "matrix.hpp"
 
-Matrix::Matrix(const int &width, const int &height) : width(width), height(height) {
-    data = new double[width * height];
+Matrix::Matrix(const int &width, const int &height, const bool &expanded) :
+        width(width), height(height), expanded(expanded) {
+    data = new double[width * height](); // all elements set to 0
+}
+
+Matrix::~Matrix() {
+    delete[] data;
+}
+
+Matrix::Matrix(const Matrix &rhs) :
+        width(rhs.width), height(rhs.height), expanded(rhs.expanded) {
+    data = new double[width * height]();
+    std::copy(rhs.data, rhs.data + rhs.width * rhs.height, data);
+}
+
+Matrix::Matrix(Matrix &&rhs) noexcept :
+        width(rhs.width), height(rhs.height), expanded(rhs.expanded) {
+    data = new double[width * height]();
+    std::move(rhs.data, rhs.data + rhs.width * rhs.height, data);
+}
+
+Matrix &Matrix::operator=(const Matrix &rhs) {
+    Matrix temp(rhs);
+    swap(temp);
+    return *this;
+}
+
+Matrix &Matrix::operator=(Matrix &&rhs) noexcept {
+    swap(rhs);
+    return *this;
+}
+
+void Matrix::swap(Matrix &rhs) {
+    std::swap(width, rhs.width);
+    std::swap(height, rhs.height);
+    std::swap(expanded, rhs.expanded);
+    std::swap(data, rhs.data);
 }
 
 size_t Matrix::index(const int &x, const int &y) const {
@@ -18,6 +54,10 @@ size_t Matrix::index(const int &x, const int &y) const {
 
 double Matrix::get_field(const int &x, const int &y) const {
     return data[index(x, y)];
+}
+
+void Matrix::set_field(const int &x, const int &y, double value) {
+    data[index(x, y)] = value;
 }
 
 std::vector<double> Matrix::get_row(const int &y) const {
@@ -38,17 +78,65 @@ std::vector<double> Matrix::get_column(const int &x) const {
     return column;
 }
 
+void Matrix::set_row(const int &y, std::vector<double> values) {
+    if (values.size() != width) {
+        throw std::domain_error("not right number of new values given");
+    }
+    for (int x = 0; x < width; ++x) {
+        data[index(x, y)] = values[x];
+    }
+}
+
+void Matrix::set_column(const int &x, std::vector<double> values) {
+    if (values.size() != height) {
+        throw std::domain_error("not right number of new values given");
+    }
+    for (int y = 0; y < height; ++y) {
+        data[index(x, y)] = values[y];
+    }
+}
+
+bool Matrix::is_square() const {
+    return height == width;
+}
+
+Matrix Matrix::get_matrix_A() const {
+    Matrix matrix_A = Matrix(width - 1, height, false);
+    matrix_A.expanded = false;
+    for (int x = 0; x < width - 1; ++x) {
+        matrix_A.set_column(x, get_column(x));
+    }
+    return matrix_A;
+}
+
+Matrix Matrix::get_transposition() const {
+    Matrix transposition = Matrix(height, width, expanded);
+    for (int y = 0; y < height; ++y) {
+        transposition.set_column(y, get_row(y));
+    }
+    return transposition;
+}
+
 std::ostream &operator<<(std::ostream &ostream, const Matrix &matrix) {
     ostream << "Matrix:" << std::endl;
     ostream << std::setprecision(2);
     for (int y = 0; y < matrix.height; ++y) {
         ostream << "( ";
         for (int x = 0; x < matrix.width; ++x) {
-            if (x == matrix.width - 1) ostream << " | ";
+            if (matrix.expanded && x == matrix.width - 1) ostream << "| ";
             ostream << matrix.get_field(x, y) << " ";
         }
         ostream << ")" << std::endl;
     }
+    return ostream;
+}
+
+std::ostream &operator<<(std::ostream &ostream, const std::vector<double> &vector) {
+    ostream << "Vector ( ";
+    for (auto n : vector) {
+        ostream << n << " ";
+    }
+    ostream << ")" << std::endl;
     return ostream;
 }
 
@@ -60,14 +148,14 @@ Matrix MatrixCreator::parse_from_cmd_line(std::ostream &ostream, std::istream &i
     ostream << "Enter height of the linear system matrix: ";
     istream >> height;
 
-    Matrix matrix(width, height);
+    Matrix matrix(width, height, true);
 
     for (int y = 0; y < height; ++y) {
         ostream << "Enter " << y + 1 << ". row of the matrix:" << std::endl;
         for (int x = 0; x < width; ++x) {
             double d;
             istream >> d;
-            matrix.data[matrix.index(x, y)] = d;
+            matrix.set_field(x, y, d);
         }
     }
 
@@ -88,7 +176,7 @@ Matrix MatrixCreator::parse_from_txt_file(std::ostream &ostream, std::istream &i
         throw std::domain_error("Failed to load matrix from file.");
     }
 
-    Matrix matrix(width, height);
+    Matrix matrix(width, height, true);
 
     for (int y = 0; y < height; ++y) {
         std::getline(file, line);
@@ -96,7 +184,7 @@ Matrix MatrixCreator::parse_from_txt_file(std::ostream &ostream, std::istream &i
         for (int x = 0; x < width; ++x) {
             double d;
             line_stream >> d;
-            matrix.data[matrix.index(x, y)] = d;
+            matrix.set_field(x, y, d);
         }
     }
 

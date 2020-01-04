@@ -11,12 +11,13 @@
 #include "utils.hpp"
 
 /**
- * Struct representing matrix of the linear system
+ * Struct representing matrix of the linear system.
  */
 struct Matrix {
     int width;
     int height;
-    double* data;
+    double* data{};
+    bool expanded;
 
     /**
      * @param x
@@ -26,11 +27,49 @@ struct Matrix {
     size_t index(const int &x, const int &y) const;
 
     /**
-     * Matrix constructor.
+     * Matrix constructor
      * @param width Number of vectors in the matrix
      * @param height Dimension of vectors in the matrix
+     * @param expanded true if the matrix is expanded (last column is vector b), false otherwise
      */
-    Matrix(const int &width, const int &height);
+    Matrix(const int &width, const int &height, const bool &expanded);
+
+    /**
+     * Matrix destructor
+     */
+    virtual ~Matrix();
+
+    /**
+     * Copy constructor
+     * @param rhs
+     */
+    Matrix(const Matrix &rhs);
+
+    /**
+     * Move constructor
+     * @param rhs
+     */
+    Matrix(Matrix &&rhs) noexcept;
+
+    /**
+     * Copy assignment
+     * @param rhs
+     * @return
+     */
+    Matrix& operator=(const Matrix &rhs);
+
+    /**
+     * Move assignment
+     * @param rhs
+     * @return
+     */
+    Matrix& operator=(Matrix &&rhs) noexcept;
+
+    /**
+     * Swaps contents of the two matrices
+     * @param rhs
+     */
+    void swap(Matrix &rhs);
 
     /**
      * @param x
@@ -40,21 +79,61 @@ struct Matrix {
     double get_field(const int &x, const int &y) const;
 
     /**
+     * Sets value of element on [x,y] coords in the matrix.
      * @param x
+     * @param y
+     * @param value to be inserted into the matrix
+     */
+    void set_field(const int &x, const int &y, double value);
+
+    /**
      * @param y
      * @return y-th row of the matrix as vector of references to elements
      */
     std::vector<double> get_row(const int &y) const;
 
     /**
-     * @param x
+     * Sets y-th row of the matrix to be given vector of values.
      * @param y
+     * @param values inserted to the given row
+     */
+    void set_row(const int &y, std::vector<double> values);
+
+    /**
+     * @param x
      * @return x-th column of the matrix as vector of references to elements
      */
     std::vector<double> get_column(const int &x) const;
+
+    /**
+     * Sets x-th column of the matrix to be given vector of values.
+     * @param x
+     * @param values inserted to the given column
+     */
+    void set_column(const int &x, std::vector<double> values);
+
+    /**
+     * Checks if the matrix is square (size n * n).
+     * @return true if matrix is square, false otherwise
+     */
+    bool is_square() const;
+
+    /**
+     * Copies the matrix and removes the vector b from the copy. The modified copy is returned.
+     * @return matrix A from the expanded linear matrix
+     */
+    Matrix get_matrix_A() const;
+
+    /**
+     * Copies the matrix and transposes it. The modified copy is returned.
+     * @return transposition of the matrix
+     */
+    Matrix get_transposition() const;
 };
 
 std::ostream& operator<<(std::ostream& ostream, const Matrix& matrix);
+
+std::ostream& operator<<(std::ostream &ostream, const std::vector<double> &vector);
 
 /**
  * Class responsible for creating the matrix structs

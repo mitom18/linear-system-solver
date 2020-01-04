@@ -6,6 +6,7 @@
 
 #include "command.hpp"
 #include "matrix.hpp"
+#include "system_solver.hpp"
 
 Command CommandInterpreter::get_command(std::ostream &ostream, std::istream &istream) {
     ostream << "Enter command to execute..." << std::endl;
@@ -47,10 +48,15 @@ void CommandInterpreter::process_command(std::ostream &ostream, std::istream &is
     } else if (cmd == Command::HELP) {
         print_help(ostream);
     } else if (cmd == Command::CMD_INPUT) {
-        ostream << MatrixCreator::parse_from_cmd_line(ostream, istream);
-        // TODO: linear system solving
+        Matrix matrix = MatrixCreator::parse_from_cmd_line(ostream, istream);
+        ostream << matrix;
+        std::vector<double> solution = SystemSolver::solve(matrix);
+        ostream << "Solution: " << solution;
     } else if (cmd == Command::TXT_INPUT) {
-        ostream << MatrixCreator::parse_from_txt_file(ostream, istream);
+        Matrix matrix = MatrixCreator::parse_from_txt_file(ostream, istream);
+        ostream << matrix;
+        std::vector<double> solution = SystemSolver::solve(matrix);
+        ostream << "Solution: " << solution;
     } else if (cmd == Command::UNKNOWN) {
         ostream << "Unknown command entered" << std::endl;
     }

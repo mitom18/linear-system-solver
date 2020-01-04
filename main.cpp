@@ -2,13 +2,13 @@
 // Created by tomanm10 on 23.11.2019.
 //
 
-#include <string>
 #include <iostream>
+#include <memory>
 
 #include "command.hpp"
 
 int main(int argc, char** argv) {
-    auto cmd_itp = new CommandInterpreter();
+    auto cmd_itp = std::make_unique<CommandInterpreter>();
     cmd_itp->print_help(std::cout);
     Command cmd_to_process = Command::UNKNOWN;
 

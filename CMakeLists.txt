@@ -9,5 +9,6 @@ set(SOURCE_FILES
         command.hpp command.cpp
         matrix.hpp matrix.cpp
         utils.hpp utils.cpp
+        system_solver.hpp system_solver.cpp
         )
 add_executable(linear-system-solver ${SOURCE_FILES})
