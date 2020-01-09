@@ -4,6 +4,7 @@
 
 #include "system_solver.hpp"
 #include <algorithm>
+#include <stack>
 
 std::pair <Matrix, Matrix> SystemSolver::decompose_lu(const Matrix &matrix) {
     int n = matrix.height;
@@ -101,7 +102,7 @@ void SystemSolver::solve(std::ostream &ostream, const Matrix &matrix) {
         std::vector<double> pivots_row_indexes;
         for (int x = 0; x < matrix_U.width - 1; ++x) {
             for (int y = matrix_U.height - 1; y >= 0; --y) {
-                if (std::find(pivots_column_indexes.begin(), pivots_column_indexes.end(), y) == pivots_column_indexes.end() &&
+                if (std::find(pivots_row_indexes.begin(), pivots_row_indexes.end(), y) == pivots_row_indexes.end() &&
                 matrix_U.get_field(x, y) != 0) {
                     pivots_column_indexes.push_back(x);
                     pivots_row_indexes.push_back(y);
@@ -116,6 +117,7 @@ void SystemSolver::solve(std::ostream &ostream, const Matrix &matrix) {
         // find particular solution
         std::vector<double> vector_p(matrix_U.width - 1);
         std::vector<double> b = matrix_U.get_column(matrix_U.width - 1);
+        std::stack<double, std::vector<double>> rows_indexes(pivots_row_indexes);
         for (int i = matrix_U.width - 2; i >= 0; i--) {
             if (std::find(pivots_column_indexes.begin(), pivots_column_indexes.end(), i) == pivots_column_indexes.end()) {
                 vector_p[i] = 0;
@@ -123,9 +125,10 @@ void SystemSolver::solve(std::ostream &ostream, const Matrix &matrix) {
             }
             double sum = 0;
             for (int k = vector_p.size() - 1; k >= i; k--) {
-                sum += (matrix_U.get_field(k, i) * vector_p[k]);
+                sum += (matrix_U.get_field(k, rows_indexes.top()) * vector_p[k]);
             }
-            vector_p[i] = (b[i] - sum) / matrix_U.get_field(i, i);
+            vector_p[i] = (b[rows_indexes.top()] - sum) / matrix_U.get_field(i, rows_indexes.top());
+            rows_indexes.pop();
         }
 
         // find kernel if needed
@@ -133,19 +136,23 @@ void SystemSolver::solve(std::ostream &ostream, const Matrix &matrix) {
         int rank = pivots_column_indexes.size();
         int defect = matrix_U.width - 1 - rank;
         for (int j = 0; j < defect; ++j) {
+            rows_indexes = std::stack<double, std::vector<double>>(pivots_row_indexes);
             std::vector<double> e(defect, 0.0);
             e[j] = 1;
             std::vector<double> kernel_basis_vector(matrix_U.width - 1);
+            int last_non_used_e_row = e.size() - 1;
             for (int i = matrix_U.width - 2; i >= 0; i--) {
                 if (std::find(pivots_column_indexes.begin(), pivots_column_indexes.end(), i) == pivots_column_indexes.end()) {
-                    kernel_basis_vector[i] = e[i - rank];
+                    std::cout << last_non_used_e_row << "\n";
+                    kernel_basis_vector[i] = e[last_non_used_e_row--];
                     continue;
                 }
                 double sum = 0;
                 for (int k = kernel_basis_vector.size() - 1; k >= i; k--) {
-                    sum += (matrix_U.get_field(k, i) * kernel_basis_vector[k]);
+                    sum += (matrix_U.get_field(k, rows_indexes.top()) * kernel_basis_vector[k]);
                 }
-                kernel_basis_vector[i] = (0 - sum) / matrix_U.get_field(i, i);
+                kernel_basis_vector[i] = (0 - sum) / matrix_U.get_field(i, rows_indexes.top());
+                rows_indexes.pop();
             }
             kernel.push_back(kernel_basis_vector);
         }
