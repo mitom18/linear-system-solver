@@ -10,13 +10,14 @@
 #include "matrix.hpp"
 
 /**
- * Class responsible for solving the linear system.
+ * Class responsible for solving the system of linear equations.
  */
 class SystemSolver {
 private:
     /**
-     * Performs LU decomposition for the given square matrix.
-     * @param matrix Matrix A
+     * Performs LU decomposition for the given matrix.
+     * @param matrix matrix to be decomposed
+     * @return std::pair of lower triangular matrix (first) and upper triangular matrix (second)
      */
     static std::pair<Matrix, Matrix> decompose_lu(const Matrix &matrix);
 
@@ -38,7 +39,7 @@ private:
 
 public:
     /**
-     * Solves the given linear system's augmented matrix and prints the solution to output stream.
+     * Solves the given linear system's augmented matrix and prints the solution to the output stream.
      * @param ostream output stream to write to
      * @param matrix augmented matrix of the linear system
      */

@@ -49,6 +49,10 @@ void Matrix::swap(Matrix &rhs) {
 }
 
 size_t Matrix::index(const int &x, const int &y) const {
+    if (x >= width || y >= height) {
+        std::cerr << x << "; " << y << std::endl;
+        throw std::out_of_range("trying to access matrix field that does not exit!");
+    }
     return x + width * y;
 }
 

@@ -6,13 +6,13 @@
 #include <algorithm>
 #include <stack>
 
-std::pair <Matrix, Matrix> SystemSolver::decompose_lu(const Matrix &matrix) {
+std::pair<Matrix, Matrix> SystemSolver::decompose_lu(const Matrix &matrix) {
     int n = matrix.height;
     // upper triangular matrix
     Matrix matrix_U = matrix;
-    // lower triangular matrix
+    // lower triangular matrix (square)
     Matrix matrix_L = MatrixCreator::get_identity(n);
-    // permutation matrix
+    // permutation matrix (square)
     Matrix matrix_P = MatrixCreator::get_identity(n);
     int pivot_row_index = 0;
 
@@ -20,10 +20,10 @@ std::pair <Matrix, Matrix> SystemSolver::decompose_lu(const Matrix &matrix) {
         if (pivot_row_index < n) {
             int current_pivot = pivot_row_index;
 
-            if (matrix_U.get_field(pivot_row_index, i) == 0) {
+            if (matrix_U.get_field(i, pivot_row_index) == 0) {
 
                 for (int k = pivot_row_index + 1; k < n && current_pivot == pivot_row_index; ++k) {
-                    if (matrix_U.get_field(k, i) != 0) {
+                    if (matrix_U.get_field(i, k) != 0) {
                         current_pivot = k;
                     }
                 }
@@ -31,15 +31,11 @@ std::pair <Matrix, Matrix> SystemSolver::decompose_lu(const Matrix &matrix) {
                 if (current_pivot != pivot_row_index) {
                     Matrix S = MatrixCreator::get_identity(n);
 
-                    for (int y = 0; y < S.height; ++y) {
-                        for (int x = 0; x < S.width; ++x) {
-                            S.set_field(x, y,
-                                        (y == pivot_row_index) ?
-                                        S.get_field(x, current_pivot) : (
-                                                (y == current_pivot) ?
-                                                S.get_field(x, pivot_row_index) : S.get_field(x, y)));
-                        }
-                    }
+                    S.foreach_field([&pivot_row_index, &current_pivot, &S](int x, int y, double e) {
+                        return (y == pivot_row_index) ?
+                               S.get_field(x, current_pivot) :
+                               ((y == current_pivot) ? S.get_field(x, pivot_row_index) : e);
+                    });
 
                     matrix_U = S * matrix_U;
                     matrix_L = S * (matrix_L - MatrixCreator::get_identity(n)) + MatrixCreator::get_identity(n);
@@ -48,13 +44,10 @@ std::pair <Matrix, Matrix> SystemSolver::decompose_lu(const Matrix &matrix) {
             } else {
                 Matrix L = MatrixCreator::get_identity(n);
 
-                for (int y = 0; y < L.height; ++y) {
-                    for (int x = 0; x < L.width; ++x) {
-                        L.set_field(x, y,
-                                    (x == pivot_row_index && y >= pivot_row_index + 1) ?
-                                    -(matrix_U.get_field(i, y) / matrix_U.get_field(i, pivot_row_index)) : L.get_field(x, y));
-                    }
-                }
+                L.foreach_field([&pivot_row_index, &matrix_U, &i](int x, int y, double e) {
+                    return (x == pivot_row_index && y >= pivot_row_index + 1) ?
+                           -(matrix_U.get_field(i, y) / matrix_U.get_field(i, pivot_row_index)) : e;
+                });
 
                 matrix_U = L * matrix_U;
                 matrix_L = matrix_L * L;
@@ -63,12 +56,10 @@ std::pair <Matrix, Matrix> SystemSolver::decompose_lu(const Matrix &matrix) {
         }
     }
 
-    for (int y = 0; y < matrix_L.height; ++y) {
-        for (int x = 0; x < matrix_L.width; ++x) {
-            matrix_L.set_field(x, y,
-                        (x == y) ? matrix_L.get_field(x, y) : -matrix_L.get_field(x, y));
-        }
-    }
+    matrix_L.foreach_field([](int x, int y, double e) {
+        return (x == y) ? e : -e;
+    });
+
     return std::make_pair(matrix_L, matrix_U);
 }
 
@@ -103,7 +94,7 @@ void SystemSolver::solve(std::ostream &ostream, const Matrix &matrix) {
         for (int x = 0; x < matrix_U.width - 1; ++x) {
             for (int y = matrix_U.height - 1; y >= 0; --y) {
                 if (std::find(pivots_row_indexes.begin(), pivots_row_indexes.end(), y) == pivots_row_indexes.end() &&
-                matrix_U.get_field(x, y) != 0) {
+                    matrix_U.get_field(x, y) != 0) {
                     pivots_column_indexes.push_back(x);
                     pivots_row_indexes.push_back(y);
                     break;
@@ -119,7 +110,8 @@ void SystemSolver::solve(std::ostream &ostream, const Matrix &matrix) {
         std::vector<double> b = matrix_U.get_column(matrix_U.width - 1);
         std::stack<double, std::vector<double>> rows_indexes(pivots_row_indexes);
         for (int i = matrix_U.width - 2; i >= 0; i--) {
-            if (std::find(pivots_column_indexes.begin(), pivots_column_indexes.end(), i) == pivots_column_indexes.end()) {
+            if (std::find(pivots_column_indexes.begin(), pivots_column_indexes.end(), i) ==
+                pivots_column_indexes.end()) {
                 vector_p[i] = 0;
                 continue;
             }
@@ -142,8 +134,8 @@ void SystemSolver::solve(std::ostream &ostream, const Matrix &matrix) {
             std::vector<double> kernel_basis_vector(matrix_U.width - 1);
             int last_non_used_e_row = e.size() - 1;
             for (int i = matrix_U.width - 2; i >= 0; i--) {
-                if (std::find(pivots_column_indexes.begin(), pivots_column_indexes.end(), i) == pivots_column_indexes.end()) {
-                    std::cout << last_non_used_e_row << "\n";
+                if (std::find(pivots_column_indexes.begin(), pivots_column_indexes.end(), i) ==
+                    pivots_column_indexes.end()) {
                     kernel_basis_vector[i] = e[last_non_used_e_row--];
                     continue;
                 }
@@ -183,7 +175,8 @@ std::vector<double> SystemSolver::forward_substitution(const Matrix &matrix, con
     return x;
 }
 
-std::vector<double> SystemSolver::backward_substitution(const Matrix &matrix, const std::vector<double> &result_vector) {
+std::vector<double>
+SystemSolver::backward_substitution(const Matrix &matrix, const std::vector<double> &result_vector) {
     std::vector<double> x(result_vector.size());
     for (int i = result_vector.size() - 1; i >= 0; i--) {
         double sum = 0;

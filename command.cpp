@@ -48,11 +48,19 @@ void CommandInterpreter::process_command(std::ostream &ostream, std::istream &is
     } else if (cmd == Command::HELP) {
         print_help(ostream);
     } else if (cmd == Command::CMD_INPUT) {
-        Matrix matrix = MatrixCreator::parse_from_cmd_line(ostream, istream);
-        SystemSolver::solve(ostream, matrix);
+        try {
+            Matrix matrix = MatrixCreator::parse_from_cmd_line(ostream, istream);
+            SystemSolver::solve(ostream, matrix);
+        } catch (std::exception &e) {
+            ostream << "An exception occurred: " << e.what() << std::endl;
+        }
     } else if (cmd == Command::TXT_INPUT) {
-        Matrix matrix = MatrixCreator::parse_from_txt_file(ostream, istream);
-        SystemSolver::solve(ostream, matrix);
+        try {
+            Matrix matrix = MatrixCreator::parse_from_txt_file(ostream, istream);
+            SystemSolver::solve(ostream, matrix);
+        } catch (std::exception &e) {
+            ostream << "An exception occurred: " << e.what() << std::endl;
+        }
     } else if (cmd == Command::UNKNOWN) {
         ostream << "Unknown command entered" << std::endl;
     }
