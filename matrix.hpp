@@ -17,7 +17,7 @@ struct Matrix {
     int width;
     int height;
     double* data{};
-    bool expanded;
+    bool augmented;
 
     /**
      * @param x
@@ -30,9 +30,9 @@ struct Matrix {
      * Matrix constructor
      * @param width Number of vectors in the matrix
      * @param height Dimension of vectors in the matrix
-     * @param expanded true if the matrix is expanded (last column is vector b), false otherwise
+     * @param augmented true if the matrix is augmented (last column is vector b), false otherwise
      */
-    Matrix(const int &width, const int &height, const bool &expanded);
+    Matrix(const int &width, const int &height, const bool &augmented);
 
     /**
      * Matrix destructor
@@ -120,7 +120,7 @@ struct Matrix {
 
     /**
      * Copies the matrix and removes the vector b from the copy. The modified copy is returned.
-     * @return matrix A from the expanded linear matrix
+     * @return matrix A from the augmented linear matrix
      */
     Matrix get_matrix_A() const;
 
@@ -131,7 +131,13 @@ struct Matrix {
     Matrix get_transposition() const;
 };
 
-std::ostream& operator<<(std::ostream& ostream, const Matrix& matrix);
+Matrix operator*(const Matrix &A, const Matrix &B);
+
+Matrix operator+(const Matrix &A, const Matrix &B);
+
+Matrix operator-(const Matrix &A, const Matrix &B);
+
+std::ostream& operator<<(std::ostream &ostream, const Matrix &matrix);
 
 std::ostream& operator<<(std::ostream &ostream, const std::vector<double> &vector);
 
@@ -155,6 +161,13 @@ public:
      * @return Matrix
      */
     static Matrix parse_from_txt_file(std::ostream &ostream, std::istream &istream);
+
+    /**
+     * Creates identity matrix of given dimension.
+     * @param dimension
+     * @return matrix of identity
+     */
+    static Matrix get_identity(const int &dimension);
 };
 
 #endif //LINEAR_SYSTEM_SOLVER_MATRIX_HPP

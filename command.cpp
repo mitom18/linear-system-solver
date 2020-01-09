@@ -49,14 +49,10 @@ void CommandInterpreter::process_command(std::ostream &ostream, std::istream &is
         print_help(ostream);
     } else if (cmd == Command::CMD_INPUT) {
         Matrix matrix = MatrixCreator::parse_from_cmd_line(ostream, istream);
-        ostream << matrix;
-        std::vector<double> solution = SystemSolver::solve(matrix);
-        ostream << "Solution: " << solution;
+        SystemSolver::solve(ostream, matrix);
     } else if (cmd == Command::TXT_INPUT) {
         Matrix matrix = MatrixCreator::parse_from_txt_file(ostream, istream);
-        ostream << matrix;
-        std::vector<double> solution = SystemSolver::solve(matrix);
-        ostream << "Solution: " << solution;
+        SystemSolver::solve(ostream, matrix);
     } else if (cmd == Command::UNKNOWN) {
         ostream << "Unknown command entered" << std::endl;
     }

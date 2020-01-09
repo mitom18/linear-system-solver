@@ -3,99 +3,187 @@
 //
 
 #include "system_solver.hpp"
+#include <algorithm>
 
-std::pair<Matrix, Matrix> SystemSolver::decompose_lu(Matrix &matrix) {
-    if (!matrix.is_square()) {
-        throw std::domain_error("Matrix is not square and cannot be LU decomposed.");
+std::pair <Matrix, Matrix> SystemSolver::decompose_lu(const Matrix &matrix) {
+    int n = matrix.height;
+    // upper triangular matrix
+    Matrix matrix_U = matrix;
+    // lower triangular matrix
+    Matrix matrix_L = MatrixCreator::get_identity(n);
+    // permutation matrix
+    Matrix matrix_P = MatrixCreator::get_identity(n);
+    int pivot_row_index = 0;
+
+    for (int i = 0; i < matrix.width; ++i) {
+        if (pivot_row_index < n) {
+            int current_pivot = pivot_row_index;
+
+            if (matrix_U.get_field(pivot_row_index, i) == 0) {
+
+                for (int k = pivot_row_index + 1; k < n && current_pivot == pivot_row_index; ++k) {
+                    if (matrix_U.get_field(k, i) != 0) {
+                        current_pivot = k;
+                    }
+                }
+
+                if (current_pivot != pivot_row_index) {
+                    Matrix S = MatrixCreator::get_identity(n);
+
+                    for (int y = 0; y < S.height; ++y) {
+                        for (int x = 0; x < S.width; ++x) {
+                            S.set_field(x, y,
+                                        (y == pivot_row_index) ?
+                                        S.get_field(x, current_pivot) : (
+                                                (y == current_pivot) ?
+                                                S.get_field(x, pivot_row_index) : S.get_field(x, y)));
+                        }
+                    }
+
+                    matrix_U = S * matrix_U;
+                    matrix_L = S * (matrix_L - MatrixCreator::get_identity(n)) + MatrixCreator::get_identity(n);
+                    matrix_P = matrix_P * S;
+                }
+            } else {
+                Matrix L = MatrixCreator::get_identity(n);
+
+                for (int y = 0; y < L.height; ++y) {
+                    for (int x = 0; x < L.width; ++x) {
+                        L.set_field(x, y,
+                                    (x == pivot_row_index && y >= pivot_row_index + 1) ?
+                                    -(matrix_U.get_field(i, y) / matrix_U.get_field(i, pivot_row_index)) : L.get_field(x, y));
+                    }
+                }
+
+                matrix_U = L * matrix_U;
+                matrix_L = matrix_L * L;
+                pivot_row_index++;
+            }
+        }
     }
 
-    int dimension = matrix.height;
-    // upper triangular matrix
-    Matrix matrix_U = Matrix(dimension, dimension, false);
-    // lower triangular matrix
-    Matrix matrix_L = Matrix(dimension, dimension, false);
-
-    double sum = 0;
-    for (int i = 0; i < dimension; i++) {
-
-        // matrix U
-        for (int j = i; j < dimension; j++) {
-            // sum of L(i, k) * U(k, j)
-            sum = 0;
-            for (int k = 0; k < i; k++) {
-                sum += (matrix_L.get_field(k, i) * matrix_U.get_field(j, k));
-            }
-            // set U(i, j)
-            matrix_U.set_field(j, i, matrix.get_field(j, i) - sum);
-        }
-
-        // matrix L
-        for (int j = i; j < dimension; j++) {
-            if (i == j) {
-                // 1 on diagonal
-                matrix_L.set_field(i, i, 1);
-            } else {
-                // sum of L(j, k) * U(k, i)
-                sum = 0;
-                for (int k = 0; k < i; k++) {
-                    sum += matrix_L.get_field(k, j) * matrix_U.get_field(i, k);
-                }
-                // set L(j, i)
-                matrix_L.set_field(i, j, (matrix.get_field(i, j) - sum) / (matrix_U.get_field(i, i)));
-            }
+    for (int y = 0; y < matrix_L.height; ++y) {
+        for (int x = 0; x < matrix_L.width; ++x) {
+            matrix_L.set_field(x, y,
+                        (x == y) ? matrix_L.get_field(x, y) : -matrix_L.get_field(x, y));
         }
     }
     return std::make_pair(matrix_L, matrix_U);
 }
 
-std::vector<double> SystemSolver::solve(Matrix &matrix) {
-    Matrix matrix_A = matrix.get_matrix_A();
-    std::vector<double> vector_b = matrix.get_column(matrix.width - 1);
-    std::vector<double> solution;
+void SystemSolver::solve(std::ostream &ostream, const Matrix &matrix) {
+    ostream << matrix;
 
-    std::cout << "Matrix A:" << std::endl;
-    std::cout << matrix_A;
-
-    if (matrix_A.is_square()) {
-        solution = solve_lu(matrix_A, vector_b);
-    } else {
-        //TODO decompose_qr
+    Matrix matrix_U = decompose_lu(matrix).second;
+    matrix_U.augmented = true;
+    bool has_solution = false;
+    for (int i = matrix_U.height - 1; i >= 0; --i) {
+        if (matrix_U.get_field(matrix_U.width - 1, i) != 0) {
+            for (int j = matrix_U.width - 2; j >= 0; ++j) {
+                if (matrix_U.get_field(j, i) != 0) {
+                    has_solution = true;
+                    break;
+                }
+            }
+            if (!has_solution) {
+                break;
+            }
+        }
     }
+    ostream << matrix_U;
+    if (!has_solution) {
+        ostream << "Given linear system has no solution." << std::endl;
+    } else {
+        ostream << "Solution of the linear system:" << std::endl;
 
-    return solution;
+        // find pivot indexes
+        std::vector<double> pivots_column_indexes;
+        std::vector<double> pivots_row_indexes;
+        for (int x = 0; x < matrix_U.width - 1; ++x) {
+            for (int y = matrix_U.height - 1; y >= 0; --y) {
+                if (std::find(pivots_column_indexes.begin(), pivots_column_indexes.end(), y) == pivots_column_indexes.end() &&
+                matrix_U.get_field(x, y) != 0) {
+                    pivots_column_indexes.push_back(x);
+                    pivots_row_indexes.push_back(y);
+                    break;
+                }
+            }
+        }
+
+        ostream << "Pivots are on columns:" << std::endl;
+        ostream << pivots_column_indexes;
+
+        // find particular solution
+        std::vector<double> vector_p(matrix_U.width - 1);
+        std::vector<double> b = matrix_U.get_column(matrix_U.width - 1);
+        for (int i = matrix_U.width - 2; i >= 0; i--) {
+            if (std::find(pivots_column_indexes.begin(), pivots_column_indexes.end(), i) == pivots_column_indexes.end()) {
+                vector_p[i] = 0;
+                continue;
+            }
+            double sum = 0;
+            for (int k = vector_p.size() - 1; k >= i; k--) {
+                sum += (matrix_U.get_field(k, i) * vector_p[k]);
+            }
+            vector_p[i] = (b[i] - sum) / matrix_U.get_field(i, i);
+        }
+
+        // find kernel if needed
+        std::vector<std::vector<double>> kernel;
+        int rank = pivots_column_indexes.size();
+        int defect = matrix_U.width - 1 - rank;
+        for (int j = 0; j < defect; ++j) {
+            std::vector<double> e(defect, 0.0);
+            e[j] = 1;
+            std::vector<double> kernel_basis_vector(matrix_U.width - 1);
+            for (int i = matrix_U.width - 2; i >= 0; i--) {
+                if (std::find(pivots_column_indexes.begin(), pivots_column_indexes.end(), i) == pivots_column_indexes.end()) {
+                    kernel_basis_vector[i] = e[i - rank];
+                    continue;
+                }
+                double sum = 0;
+                for (int k = kernel_basis_vector.size() - 1; k >= i; k--) {
+                    sum += (matrix_U.get_field(k, i) * kernel_basis_vector[k]);
+                }
+                kernel_basis_vector[i] = (0 - sum) / matrix_U.get_field(i, i);
+            }
+            kernel.push_back(kernel_basis_vector);
+        }
+
+        if (!kernel.empty()) {
+            ostream << "Particular solution is:" << std::endl;
+            ostream << vector_p;
+            ostream << "Basis of the kernel is:" << std::endl;
+            for (const auto &i : kernel) {
+                ostream << i;
+            }
+        } else {
+            ostream << "Unique solution is:" << std::endl;
+            ostream << vector_p;
+        }
+    }
 }
 
-std::vector<double> SystemSolver::solve_lu(Matrix &matrix_A, std::vector<double> &vector_b) {
-    std::pair<Matrix, Matrix> lu = decompose_lu(matrix_A);
-    Matrix matrix_L = lu.first;
-    Matrix matrix_U = lu.second;
-
-    std::cout << "Lower triangular matrix:" << std::endl;
-    std::cout << matrix_L;
-    std::cout << "Upper triangular matrix:" << std::endl;
-    std::cout << matrix_U;
-
-    double sum = 0;
-
-    // find solution of Ly = b by forward substitution
-    std::vector<double> y(vector_b.size());
-    for (int i = 0; i < vector_b.size(); i++) {
-        sum = 0;
+std::vector<double> SystemSolver::forward_substitution(const Matrix &matrix, const std::vector<double> &result_vector) {
+    std::vector<double> x(result_vector.size());
+    for (int i = 0; i < result_vector.size(); i++) {
+        double sum = 0;
         for (int k = 0; k < i; k++) {
-            sum += (matrix_L.get_field(k, i) * y[k]);
+            sum += (matrix.get_field(k, i) * x[k]);
         }
-        y[i] = vector_b[i] - sum;
+        x[i] = result_vector[i] - sum;
     }
+    return x;
+}
 
-    // find solution of Ux = y by backward substitution
-    std::vector<double> x(y.size());
-    for (int i = y.size() - 1; i >= 0; i--) {
-        sum = 0;
-        for (int k = y.size() - 1; k >= i; k--) {
-            sum += (matrix_U.get_field(k, i) * x[k]);
+std::vector<double> SystemSolver::backward_substitution(const Matrix &matrix, const std::vector<double> &result_vector) {
+    std::vector<double> x(result_vector.size());
+    for (int i = result_vector.size() - 1; i >= 0; i--) {
+        double sum = 0;
+        for (int k = result_vector.size() - 1; k >= i; k--) {
+            sum += (matrix.get_field(k, i) * x[k]);
         }
-        x[i] = (y[i] - sum) / matrix_U.get_field(i, i);
+        x[i] = (result_vector[i] - sum) / matrix.get_field(i, i);
     }
-
     return x;
 }

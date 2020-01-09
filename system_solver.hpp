@@ -14,32 +14,35 @@
  */
 class SystemSolver {
 private:
-    // TODO https://en.wikipedia.org/wiki/LU_decomposition
     /**
      * Performs LU decomposition for the given square matrix.
-     * @param matrix square matrix A
+     * @param matrix Matrix A
      */
-    static std::pair<Matrix, Matrix> decompose_lu(Matrix &matrix);
+    static std::pair<Matrix, Matrix> decompose_lu(const Matrix &matrix);
 
     /**
-     * Solves the given linear system with LU decomposition.
-     * @param matrix_A Square matrix
-     * @param vector_b Right most vector of the expanded matrix
-     * @return solution of the linear system as vector
+     * Gets the vector x from Ax = b with using forward substitution.
+     * @param matrix A
+     * @param result_vector b
+     * @return searched vector x
      */
-    static std::vector<double> solve_lu(Matrix &matrix_A, std::vector<double> &vector_b);
+    static std::vector<double> forward_substitution(const Matrix &matrix, const std::vector<double> &result_vector);
 
-    // TODO https://en.wikipedia.org/wiki/QR_decomposition
-    static void decompose_qr(Matrix &matrix);
+    /**
+     * Gets the vector x from Ax = b with using backward substitution.
+     * @param matrix A
+     * @param result_vector b
+     * @return searched vector x
+     */
+    static std::vector<double> backward_substitution(const Matrix &matrix, const std::vector<double> &result_vector);
 
 public:
     /**
-     * Solves the given linear system's expanded matrix.
-     * @param matrix expanded matrix of the linear system
-     * @return solution of the linear system defined with given matrix as vector
+     * Solves the given linear system's augmented matrix and prints the solution to output stream.
+     * @param ostream output stream to write to
+     * @param matrix augmented matrix of the linear system
      */
-    // TODO https://stackoverflow.com/questions/20181940/most-efficient-way-to-solve-a-system-of-linear-equations
-    static std::vector<double> solve(Matrix &matrix);
+    static void solve(std::ostream &ostream, const Matrix &matrix);
 };
 
 #endif //LINEAR_SYSTEM_SOLVER_SYSTEM_SOLVER_HPP
