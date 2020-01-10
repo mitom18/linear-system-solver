@@ -3,8 +3,11 @@
 //
 
 #include "system_solver.hpp"
+#include "command.hpp"
 #include <algorithm>
 #include <stack>
+#include <chrono>
+#include <future>
 
 std::pair<Matrix, Matrix> SystemSolver::decompose_lu(const Matrix &matrix) {
     int n = matrix.height;
@@ -64,6 +67,9 @@ std::pair<Matrix, Matrix> SystemSolver::decompose_lu(const Matrix &matrix) {
 }
 
 void SystemSolver::solve(std::ostream &ostream, const Matrix &matrix) {
+    // capture time on start
+    auto start = std::chrono::high_resolution_clock::now();
+
     ostream << "Solving matrix:" << std::endl << matrix;
 
     Matrix matrix_U = decompose_lu(matrix).second;
@@ -88,22 +94,47 @@ void SystemSolver::solve(std::ostream &ostream, const Matrix &matrix) {
     } else {
         ostream << "Solution of the linear system:" << std::endl;
 
-        // find particular solution
-        std::vector<double> vector_b = matrix_U.get_column(matrix_U.width - 1);
-        std::vector<double> vector_p =
-                backward_substitution(matrix_U, vector_b, pivots_column_indexes, pivots_row_indexes);
-
-        // find kernel if needed (defect > 0)
+        std::vector<double> vector_p;
         std::vector<std::vector<double>> kernel;
         int rank = pivots_column_indexes.size();
         int defect = matrix_U.width - 1 - rank;
-        for (int j = 0; j < defect; ++j) {
-            std::vector<double> kernel_basis_vector =
-                    backward_substitution(matrix_U, std::vector<double>(matrix_U.height, 0.0),
-                                          pivots_column_indexes, pivots_row_indexes, j);
-            kernel.push_back(kernel_basis_vector);
+        std::vector<double> vector_b = matrix_U.get_column(matrix_U.width - 1);
+
+        if (!CommandInterpreter::USING_MULTIPLE_THREADS) {
+            // find particular solution
+            vector_p = backward_substitution(matrix_U, vector_b, pivots_column_indexes, pivots_row_indexes);
+
+            // find kernel if needed (defect > 0)
+            for (int j = 0; j < defect; ++j) {
+                std::vector<double> kernel_basis_vector =
+                        backward_substitution(matrix_U, std::vector<double>(matrix_U.height, 0.0),
+                                              pivots_column_indexes, pivots_row_indexes, j);
+                kernel.push_back(kernel_basis_vector);
+            }
+        } else {
+            // find particular solution
+            auto vector_p_fut =
+                    std::async(std::launch::async, &backward_substitution, matrix_U, vector_b,
+                               pivots_column_indexes, pivots_row_indexes, -1);
+
+            // find kernel if needed (defect > 0)
+            std::vector<std::future<std::vector<double>>> kernel_fut;
+            kernel_fut.reserve(defect);
+            for (int j = 0; j < defect; ++j) {
+                kernel_fut.emplace_back(
+                        std::async(std::launch::async, &backward_substitution, matrix_U,
+                                   std::vector<double>(matrix_U.height, 0.0),
+                                   pivots_column_indexes, pivots_row_indexes, j));
+            }
+
+            // get all results from futures
+            vector_p = vector_p_fut.get();
+            for (std::future<std::vector<double>> &k : kernel_fut) {
+                kernel.push_back(k.get());
+            }
         }
 
+        // print the solution
         if (!kernel.empty()) {
             ostream << "Particular solution is:" << std::endl;
             ostream << vector_p;
@@ -116,6 +147,10 @@ void SystemSolver::solve(std::ostream &ostream, const Matrix &matrix) {
             ostream << vector_p;
         }
     }
+
+    // capture time on end and print the time result
+    auto end = std::chrono::high_resolution_clock::now();
+    ostream << "Needed " << to_ms(end - start).count() << " ms to finish." << std::endl;
 }
 
 std::vector<double>

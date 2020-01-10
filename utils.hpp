@@ -9,6 +9,7 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <chrono>
 
 /**
  * Constant representing directory in which all program txt file inputs are located.
@@ -47,5 +48,10 @@ public:
      */
     static std::ifstream choose_file(std::ostream &ostream, std::istream &istream);
 };
+
+template <typename TimePoint>
+std::chrono::milliseconds to_ms(TimePoint tp) {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(tp);
+}
 
 #endif //LINEAR_SYSTEM_SOLVER_UTILS_HPP

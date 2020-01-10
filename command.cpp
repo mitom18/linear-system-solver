@@ -8,6 +8,8 @@
 #include "matrix.hpp"
 #include "system_solver.hpp"
 
+bool CommandInterpreter::USING_MULTIPLE_THREADS = false; // use one thread as default
+
 Command CommandInterpreter::get_command(std::ostream &ostream, std::istream &istream) {
     ostream << "Enter command to execute..." << std::endl;
     istream >> std::ws; // clear the whitespaces that left in the stream
@@ -47,6 +49,12 @@ void CommandInterpreter::process_command(std::ostream &ostream, std::istream &is
         ostream << "Shutting down..." << std::endl;
     } else if (cmd == Command::HELP) {
         print_help(ostream);
+    } else if (cmd == Command::ONE_THREAD) {
+        CommandInterpreter::USING_MULTIPLE_THREADS = false;
+        ostream << "Using one thread for computation." << std::endl;
+    } else if (cmd == Command::MTP_THREAD) {
+        CommandInterpreter::USING_MULTIPLE_THREADS = true;
+        ostream << "Using multiple threads for computation." << std::endl;
     } else if (cmd == Command::CMD_INPUT) {
         try {
             Matrix matrix = MatrixCreator::parse_from_cmd_line(ostream, istream);

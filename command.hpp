@@ -16,6 +16,8 @@ enum class Command {
     HELP,
     CMD_INPUT,
     TXT_INPUT,
+    ONE_THREAD,
+    MTP_THREAD,
     UNKNOWN
 };
 
@@ -25,17 +27,21 @@ enum class Command {
 class CommandInterpreter {
 private:
     std::map<std::string, Command> command_list{
-            {"q",   Command::QUIT},
-            {"h",   Command::HELP},
-            {"cmd", Command::CMD_INPUT},
-            {"txt", Command::TXT_INPUT}
+            {"q",    Command::QUIT},
+            {"h",    Command::HELP},
+            {"cmd",  Command::CMD_INPUT},
+            {"txt",  Command::TXT_INPUT},
+            {"thd1", Command::ONE_THREAD},
+            {"thd2", Command::MTP_THREAD}
     };
 
     std::map<Command, std::string> command_descriptions{
-            {Command::QUIT,      "shuts down the program"},
-            {Command::HELP,      "shows help"},
-            {Command::CMD_INPUT, "selects input from command line"},
-            {Command::TXT_INPUT, "selects input from text file"}
+            {Command::QUIT,       "shuts down the program"},
+            {Command::HELP,       "shows help"},
+            {Command::CMD_INPUT,  "selects input from command line"},
+            {Command::TXT_INPUT,  "selects input from text file"},
+            {Command::ONE_THREAD, "sets app to use one thread for computation"},
+            {Command::MTP_THREAD, "sets app to use multiple threads for computation"}
     };
 
     /**
@@ -55,6 +61,12 @@ private:
     std::string get_command_help(const Command &cmd);
 
 public:
+    /**
+     * Determines if the system solver will use multiple threads for the computation.
+     * Default value set below.
+     */
+    static bool USING_MULTIPLE_THREADS;
+
     /**
      * Asks user for command alias and returns Command enum field for given alias.
      *
