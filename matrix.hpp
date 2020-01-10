@@ -12,6 +12,7 @@
 
 /**
  * Struct representing matrix.
+ * <p>
  * If augmented is set to true, than the matrix represents system of linear equations.
  */
 struct Matrix {
@@ -29,6 +30,7 @@ struct Matrix {
 
     /**
      * Matrix constructor.
+     *
      * @param width number of vectors in the matrix
      * @param height dimension of vectors in the matrix
      * @param augmented true if the matrix is augmented (last column is vector b), false otherwise
@@ -42,32 +44,37 @@ struct Matrix {
 
     /**
      * Copy constructor.
-     * @param rhs
+     *
+     * @param rhs matrix to copy from
      */
     Matrix(const Matrix &rhs);
 
     /**
      * Move constructor.
-     * @param rhs
+     *
+     * @param rhs matrix to move from
      */
     Matrix(Matrix &&rhs) noexcept;
 
     /**
      * Copy assignment.
-     * @param rhs
-     * @return
+     *
+     * @param rhs matrix to copy from
+     * @return reference to this
      */
     Matrix &operator=(const Matrix &rhs);
 
     /**
      * Move assignment.
-     * @param rhs
-     * @return
+     *
+     * @param rhs matrix to move from
+     * @return reference to this
      */
     Matrix &operator=(Matrix &&rhs) noexcept;
 
     /**
-     * Swaps contents of the two matrices
+     * Swaps contents of the two matrices.
+     *
      * @param rhs
      */
     void swap(Matrix &rhs);
@@ -81,6 +88,7 @@ struct Matrix {
 
     /**
      * Sets value of element on [x,y] coords in the matrix.
+     *
      * @param x index of the column in which the field is (zero based)
      * @param y index of the row in which the field is (zero based)
      * @param value double to be inserted into the matrix
@@ -95,6 +103,7 @@ struct Matrix {
 
     /**
      * Sets y-th row of the matrix to be given vector of values.
+     *
      * @param y index of the row to be set (zero based)
      * @param values vector of doubles to be inserted in the given column
      */
@@ -108,6 +117,7 @@ struct Matrix {
 
     /**
      * Sets x-th column of the matrix to be given vector of values.
+     *
      * @param x index of the column to be set (zero based)
      * @param values vector of doubles to be inserted in the given column
      */
@@ -115,6 +125,7 @@ struct Matrix {
 
     /**
      * Checks if the matrix is square (size n * n).
+     *
      * @return true if matrix is square, false otherwise
      */
     bool is_square() const;
@@ -127,12 +138,14 @@ struct Matrix {
 
     /**
      * Copies the matrix and transposes it. The modified copy is returned.
+     *
      * @return Matrix transposition of the matrix
      */
     Matrix get_transposition() const;
 
     /**
      * Executes modifying lambda function for each field of the matrix.
+     *
      * @tparam T
      * @param lambda function
      */
@@ -163,6 +176,7 @@ class MatrixCreator {
 public:
     /**
      * Parses matrix from command line. Provides basic user communication.
+     *
      * @param ostream output stream to write information to
      * @param istream input stream to read from
      * @return Matrix read from input stream
@@ -171,6 +185,7 @@ public:
 
     /**
      * Parses matrix from txt file. Provides also the file choose.
+     *
      * @param ostream output stream to write information to
      * @param istream input stream to read from
      * @return Matrix read from input stream
@@ -179,6 +194,7 @@ public:
 
     /**
      * Creates identity matrix with given dimension n. (size n * n; 1 in fields on diagonal, 0 in all other fields)
+     *
      * @param dimension size of the returned matrix
      * @return Matrix of identity
      */

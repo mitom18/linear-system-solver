@@ -64,88 +64,43 @@ std::pair<Matrix, Matrix> SystemSolver::decompose_lu(const Matrix &matrix) {
 }
 
 void SystemSolver::solve(std::ostream &ostream, const Matrix &matrix) {
-    ostream << matrix;
+    ostream << "Solving matrix:" << std::endl << matrix;
 
     Matrix matrix_U = decompose_lu(matrix).second;
     matrix_U.augmented = true;
-    bool has_solution = false;
-    for (int i = matrix_U.height - 1; i >= 0; --i) {
-        if (matrix_U.get_field(matrix_U.width - 1, i) != 0) {
-            for (int j = matrix_U.width - 2; j >= 0; ++j) {
-                if (matrix_U.get_field(j, i) != 0) {
-                    has_solution = true;
-                    break;
-                }
-            }
-            if (!has_solution) {
-                break;
-            }
-        }
-    }
-    ostream << matrix_U;
-    if (!has_solution) {
+
+    ostream << "Upper triangular matrix:" << std::endl << matrix_U;
+
+    // find pivot indexes
+    std::pair<std::vector<double>, std::vector<double>> pivot_indexes = get_pivot_indexes(matrix_U);
+    std::vector<double> pivots_column_indexes = pivot_indexes.first;
+    std::vector<double> pivots_row_indexes = pivot_indexes.second;
+
+    ostream << "Pivots are on columns:" << std::endl << pivots_column_indexes;
+    ostream << "Pivots are on rows:" << std::endl << pivots_row_indexes;
+
+    bool solution_exists =
+            std::find(pivots_column_indexes.begin(), pivots_column_indexes.end(), matrix_U.width - 1) ==
+            pivots_column_indexes.end();
+
+    if (!solution_exists) {
         ostream << "Given linear system has no solution." << std::endl;
     } else {
         ostream << "Solution of the linear system:" << std::endl;
 
-        // find pivot indexes
-        std::vector<double> pivots_column_indexes;
-        std::vector<double> pivots_row_indexes;
-        for (int x = 0; x < matrix_U.width - 1; ++x) {
-            for (int y = matrix_U.height - 1; y >= 0; --y) {
-                if (std::find(pivots_row_indexes.begin(), pivots_row_indexes.end(), y) == pivots_row_indexes.end() &&
-                    matrix_U.get_field(x, y) != 0) {
-                    pivots_column_indexes.push_back(x);
-                    pivots_row_indexes.push_back(y);
-                    break;
-                }
-            }
-        }
-
-        ostream << "Pivots are on columns:" << std::endl;
-        ostream << pivots_column_indexes;
-
         // find particular solution
-        std::vector<double> vector_p(matrix_U.width - 1);
-        std::vector<double> b = matrix_U.get_column(matrix_U.width - 1);
-        std::stack<double, std::vector<double>> rows_indexes(pivots_row_indexes);
-        for (int i = matrix_U.width - 2; i >= 0; i--) {
-            if (std::find(pivots_column_indexes.begin(), pivots_column_indexes.end(), i) ==
-                pivots_column_indexes.end()) {
-                vector_p[i] = 0;
-                continue;
-            }
-            double sum = 0;
-            for (int k = vector_p.size() - 1; k >= i; k--) {
-                sum += (matrix_U.get_field(k, rows_indexes.top()) * vector_p[k]);
-            }
-            vector_p[i] = (b[rows_indexes.top()] - sum) / matrix_U.get_field(i, rows_indexes.top());
-            rows_indexes.pop();
-        }
+        std::vector<double> vector_b = matrix_U.get_column(matrix_U.width - 1);
+        std::vector<double> vector_p =
+                backward_substitution(matrix_U, vector_b, pivots_column_indexes, pivots_row_indexes);
 
-        // find kernel if needed
+        // find kernel if needed (defect > 0)
         std::vector<std::vector<double>> kernel;
         int rank = pivots_column_indexes.size();
         int defect = matrix_U.width - 1 - rank;
         for (int j = 0; j < defect; ++j) {
-            rows_indexes = std::stack<double, std::vector<double>>(pivots_row_indexes);
-            std::vector<double> e(defect, 0.0);
-            e[j] = 1;
-            std::vector<double> kernel_basis_vector(matrix_U.width - 1);
-            int last_non_used_e_row = e.size() - 1;
-            for (int i = matrix_U.width - 2; i >= 0; i--) {
-                if (std::find(pivots_column_indexes.begin(), pivots_column_indexes.end(), i) ==
-                    pivots_column_indexes.end()) {
-                    kernel_basis_vector[i] = e[last_non_used_e_row--];
-                    continue;
-                }
-                double sum = 0;
-                for (int k = kernel_basis_vector.size() - 1; k >= i; k--) {
-                    sum += (matrix_U.get_field(k, rows_indexes.top()) * kernel_basis_vector[k]);
-                }
-                kernel_basis_vector[i] = (0 - sum) / matrix_U.get_field(i, rows_indexes.top());
-                rows_indexes.pop();
-            }
+            std::vector<double> kernel_basis_vector =
+                    backward_substitution(matrix_U, std::vector<double>(matrix_U.height, 0.0),
+                                          pivots_column_indexes, pivots_row_indexes, j);
             kernel.push_back(kernel_basis_vector);
         }
 
@@ -163,27 +118,54 @@ void SystemSolver::solve(std::ostream &ostream, const Matrix &matrix) {
     }
 }
 
-std::vector<double> SystemSolver::forward_substitution(const Matrix &matrix, const std::vector<double> &result_vector) {
-    std::vector<double> x(result_vector.size());
-    for (int i = 0; i < result_vector.size(); i++) {
-        double sum = 0;
-        for (int k = 0; k < i; k++) {
-            sum += (matrix.get_field(k, i) * x[k]);
-        }
-        x[i] = result_vector[i] - sum;
+std::vector<double>
+SystemSolver::backward_substitution(const Matrix &matrix_U, const std::vector<double> &result_vector,
+                                    const std::vector<double> &pivots_column_indexes,
+                                    const std::vector<double> &pivots_row_indexes,
+                                    const int &j) {
+
+    int rank = pivots_column_indexes.size();
+    int defect = matrix_U.width - 1 - rank;
+    std::stack<double, std::vector<double>> rows_indexes = std::stack<double, std::vector<double>>(pivots_row_indexes);
+    std::vector<double> e(defect, 0.0);
+    if (j > -1) {
+        e[j] = 1;
     }
-    return x;
+    std::vector<double> vector_x(matrix_U.width - 1);
+    int last_non_used_e_row = e.size() - 1;
+
+    for (int i = matrix_U.width - 2; i >= 0; i--) {
+
+        if (std::find(pivots_column_indexes.begin(), pivots_column_indexes.end(), i) ==
+            pivots_column_indexes.end()) {
+            vector_x[i] = e[last_non_used_e_row--];
+            continue;
+        }
+
+        double sum = 0;
+        for (int k = vector_x.size() - 1; k >= i; k--) {
+            sum += (matrix_U.get_field(k, rows_indexes.top()) * vector_x[k]);
+        }
+
+        vector_x[i] = (result_vector[rows_indexes.top()] - sum) / matrix_U.get_field(i, rows_indexes.top());
+        rows_indexes.pop();
+    }
+
+    return vector_x;
 }
 
-std::vector<double>
-SystemSolver::backward_substitution(const Matrix &matrix, const std::vector<double> &result_vector) {
-    std::vector<double> x(result_vector.size());
-    for (int i = result_vector.size() - 1; i >= 0; i--) {
-        double sum = 0;
-        for (int k = result_vector.size() - 1; k >= i; k--) {
-            sum += (matrix.get_field(k, i) * x[k]);
+std::pair<std::vector<double>, std::vector<double>> SystemSolver::get_pivot_indexes(const Matrix &matrix_U) {
+    std::vector<double> pivots_column_indexes;
+    std::vector<double> pivots_row_indexes;
+    for (int x = 0; x < matrix_U.width; ++x) {
+        for (int y = matrix_U.height - 1; y >= 0; --y) {
+            if (std::find(pivots_row_indexes.begin(), pivots_row_indexes.end(), y) == pivots_row_indexes.end() &&
+                matrix_U.get_field(x, y) != 0) {
+                pivots_column_indexes.push_back(x);
+                pivots_row_indexes.push_back(y);
+                break;
+            }
         }
-        x[i] = (result_vector[i] - sum) / matrix.get_field(i, i);
     }
-    return x;
+    return std::make_pair(pivots_column_indexes, pivots_row_indexes);
 }
