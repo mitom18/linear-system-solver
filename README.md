@@ -19,22 +19,22 @@ from `linear-system-solver.exe` would be `../inputs/matrix.txt`.
 The input files should be in format `.txt` and their content should be also properly formatted. 
 For matrix:
 
-| | | | | | | |
-| --- | --- | --- | --- | --- | --- | --- |
-| 1 | 2 | 1 | 1 | 1 | / | -4 |
-| -1 | -2 | -2 | 2 | 1 | / | 9 |
-| 2 | 4 | 3 | -1 | 0 | / | -13 |
-| 1 | 2 | 2 | -2 | -1 | / | -9 |
+```
+ 1  2  1  1  1 | -4
+-1 -2 -2  2  1 |  9
+ 2  4  3 -1  0 | -13
+ 1  2  2 -2 -1 | -9
+```
 
 the file should look like:
 
-| | | | | | |
-| --- | --- | --- | --- | --- | --- |
-| 6 | 4 | | | | | |
-| 1 | 2 | 1 | 1 | 1 | -4 |
-| -1 | -2 | -2 | 2 | 1 | 9 |
-| 2 | 4 | 3 | -1 | 0 | -13 |
-| 1 | 2 | 2 | -2 | -1 | -9 |
+```
+ 6  4
+ 1  2  1  1  1 -4
+-1 -2 -2  2  1  9
+ 2  4  3 -1  0 -13
+ 1  2  2 -2 -1 -9
+```
 
 The first line holds two space separated numbers, first for width of the matrix, second for height of the matrix. 
 Each other line represents row of the matrix. **The values are space separated.** 
