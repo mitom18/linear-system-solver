@@ -9,7 +9,7 @@ Program output looks like one of following options:
 
 ## Usage
 ### Compilation
-The application was created with use of the JetBrains CLion IDE. It is preferred that you use this IDE 
+The application was created with usage of the JetBrains CLion IDE. It is preferred that you use this IDE 
 for the build of the application.
 
 If you decide to run the program from the command line or other IDE, please make sure that the input folder 
@@ -73,7 +73,7 @@ different thread, so the computation is faster. However, with not that complex s
 one can't see that much of a difference between the two implementations.
 
 The test data were meant to be real and thus not that much complex. 
-On Acer Aspire V15 Nitro, with Intel Core i7 two-core 2.6 GHz processor all both implementations 
+On Acer Aspire V15 Nitro, with Intel Core i7 two-core 2.6 GHz processor both implementations 
 needed less than 1 ms to finish.
 
 ## Code structure
