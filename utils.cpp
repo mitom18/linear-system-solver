@@ -37,7 +37,7 @@ std::vector<std::string> FileReader::get_files() {
 }
 
 void FileReader::print_files(std::ostream &ostream) {
-    ostream << "Files to choose from:" << std::endl;
+    ostream << "Files to choose from (write the file name with .txt as well):" << std::endl;
     for (auto &file : get_files()) {
         ostream << file << " ";
     }
