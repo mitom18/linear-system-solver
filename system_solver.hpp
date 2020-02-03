@@ -15,6 +15,13 @@
 class SystemSolver {
 private:
     /**
+     * Shuffles the given matrix, so it has rows starting with 0 at the bottom.
+     *
+     * @param matrix matrix to be shuffled
+     */
+    static void shuffle_zero_rows(Matrix &matrix);
+
+    /**
      * Performs LU decomposition for the given matrix.
      *
      * @param matrix matrix to be decomposed

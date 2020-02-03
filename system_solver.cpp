@@ -9,17 +9,32 @@
 #include <chrono>
 #include <future>
 
+void SystemSolver::shuffle_zero_rows(Matrix &matrix) {
+    for (int y = matrix.height - 1; y >= 0; --y) {
+        if (matrix.get_field(0, 0) == 0) {
+            std::vector<double> temp_first_row = matrix.get_row(0);
+            matrix.set_row(0, matrix.get_row(y));
+            matrix.set_row(y, temp_first_row);
+        } else {
+            break;
+        }
+    }
+}
+
 std::pair<Matrix, Matrix> SystemSolver::decompose_lu(const Matrix &matrix) {
-    int n = matrix.height;
+    Matrix matrix_cpy = matrix;
+    shuffle_zero_rows(matrix_cpy);
+
+    int n = matrix_cpy.height;
     // upper triangular matrix
-    Matrix matrix_U = matrix;
+    Matrix matrix_U = matrix_cpy;
     // lower triangular matrix (square)
     Matrix matrix_L = MatrixCreator::get_identity(n);
     // permutation matrix (square)
     Matrix matrix_P = MatrixCreator::get_identity(n);
     int pivot_row_index = 0;
 
-    for (int i = 0; i < matrix.width; ++i) {
+    for (int i = 0; i < matrix_cpy.width; ++i) {
         if (pivot_row_index < n) {
             int current_pivot = pivot_row_index;
 
